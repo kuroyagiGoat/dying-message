@@ -1,0 +1,120 @@
+.setup-screen {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+}
+
+.setup-screen__title {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+  text-align: center;
+}
+
+.setup-screen__subtitle {
+  margin: 0 0 1.5rem;
+  color: #444;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.setup-screen__section {
+  margin-bottom: 1.5rem;
+}
+
+.setup-screen__label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.setup-screen__row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.setup-screen__input {
+  flex: 1;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.setup-screen__player-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.setup-screen__player-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.setup-screen__player-select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0.25rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.setup-screen__player-select:hover {
+  background: #f5f5f5;
+}
+
+.setup-screen__player-name {
+  flex: 1;
+}
+
+.setup-screen__error {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.75rem;
+  background: #fff3f3;
+  border: 1px solid #f5c2c2;
+  border-radius: 6px;
+  color: #a11;
+  font-size: 0.9rem;
+}
+
+.setup-screen__actions {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.setup-screen button {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.setup-screen__btn-primary {
+  padding: 0.65rem 1.25rem;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.setup-screen__btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.setup-screen__btn-secondary {
+  padding: 0.4rem 0.75rem;
+  background: #eee;
+  color: #222;
+}
+
+.setup-screen__btn-danger {
+  padding: 0.35rem 0.6rem;
+  background: #fee;
+  color: #922;
+  font-size: 0.85rem;
+}

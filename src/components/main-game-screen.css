@@ -1,0 +1,517 @@
+.main-game {
+  min-height: 100vh;
+  padding: 1rem 1rem 2rem;
+  background: #f0f1f4;
+}
+
+.main-game__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.main-game__header h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  flex: 1;
+}
+
+.main-game__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.main-game__exploration {
+  font-weight: 600;
+}
+
+.main-game__reset {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: #eee;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.main-game__board {
+  --topic-card-width: clamp(4.25rem, 9vw, 6.5rem);
+  --topic-card-height: calc(var(--topic-card-width) * 4 / 3);
+  /* お題カード高さの50%。2組縦並びでちょうど1行分に収まる */
+  --hint-card-height: calc(var(--topic-card-height) / 2);
+  --hint-stack-gap: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.main-game__category-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  height: var(--topic-card-height);
+  min-height: var(--topic-card-height);
+  max-height: var(--topic-card-height);
+}
+
+.main-game__row-label {
+  flex: 0 0 3.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #333;
+  letter-spacing: 0.08em;
+}
+
+.main-game__row-scroll {
+  flex: 1;
+  min-width: 0;
+  height: var(--topic-card-height);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.main-game__row-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  min-width: 100%;
+  height: var(--topic-card-height);
+}
+
+.main-game__topic-cards {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  height: var(--topic-card-height);
+}
+
+.main-game__card {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: var(--topic-card-width);
+  height: var(--topic-card-height);
+  min-height: var(--topic-card-height);
+  max-height: var(--topic-card-height);
+  padding: 0.5rem 0.35rem;
+  border: 2px solid #c8ccd4;
+  border-radius: 10px;
+  background: #fff;
+  font-size: clamp(0.7rem, 1.6vw, 0.85rem);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.main-game__card--excluded {
+  background: #d8dbe0;
+  color: #7a7f88;
+  border-color: #b0b5bd;
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+
+.main-game__card--selected {
+  border-color: #2563eb;
+  background: #dbeafe;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+}
+
+.main-game__card--clickable {
+  cursor: pointer;
+}
+
+.main-game__card--answer {
+  border-color: #ca8a04;
+  background: #fef9c3;
+  color: #713f12;
+}
+
+.main-game__card--answer.main-game__card--excluded {
+  opacity: 1;
+  text-decoration: none;
+  background: #fef9c3;
+  color: #713f12;
+  border-color: #ca8a04;
+}
+
+.main-game__card--clickable:hover:not(.main-game__card--excluded) {
+  border-color: #6b7280;
+}
+
+.main-game__message-slot {
+  flex: 0 0 auto;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: var(--hint-stack-gap);
+  box-sizing: border-box;
+  height: var(--topic-card-height);
+  max-height: var(--topic-card-height);
+  padding-left: 0.35rem;
+  border-left: 2px dashed #c4c9d2;
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.main-game__message-pair {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  height: var(--hint-card-height);
+  min-height: var(--hint-card-height);
+  max-height: var(--hint-card-height);
+}
+
+.main-game__hint-display {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: var(--topic-card-width);
+  height: var(--hint-card-height);
+  min-height: var(--hint-card-height);
+  max-height: var(--hint-card-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.25rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: clamp(0.6rem, 1.2vw, 0.72rem);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.main-game__hint-display--a {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #7f1d1d;
+}
+
+.main-game__hint-display--b {
+  background: #dbeafe;
+  border-color: #bfdbfe;
+  color: #1e3a8a;
+}
+
+.main-game__hint-display--compact {
+  width: auto;
+  min-width: 4.5rem;
+  max-width: 100%;
+  height: auto;
+  min-height: 1.65rem;
+  max-height: none;
+  padding: 0.2rem 0.45rem;
+  white-space: nowrap;
+}
+
+.main-game__action-bar {
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+}
+
+.main-game__action-bar h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.main-game__action-bar section {
+  margin-bottom: 0;
+}
+
+.main-game__hint-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 560px) {
+  .main-game__hint-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.main-game__hint-column label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.main-game__action-bar label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.main-game__radio-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.main-game__radio-option {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+
+.main-game__radio-option--disabled {
+  color: #888;
+  cursor: not-allowed;
+}
+
+.main-game__radio-option--disabled input {
+  cursor: not-allowed;
+}
+
+.main-game__radio-limit-note {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.main-game__hint-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.main-game__hint-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.7rem;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.main-game__hint-chip--a {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #7f1d1d;
+}
+
+.main-game__hint-chip--a:has(input:checked) {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+.main-game__hint-chip--b {
+  background: #dbeafe;
+  border-color: #bfdbfe;
+  color: #1e3a8a;
+}
+
+.main-game__hint-chip--b:has(input:checked) {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.main-game__detective-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.main-game__detective-hints {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.main-game__detective-hints-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.main-game__detective-hints-label {
+  flex: 0 0 auto;
+  min-width: 3.25rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.main-game__detective-hints-empty {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.82rem;
+  color: #666;
+  line-height: 1.45;
+}
+
+.main-game__selection-count {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.main-game__btn {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.main-game__btn--primary {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.main-game__btn--primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.main-game__btn--secondary {
+  background: #eee;
+  color: #222;
+}
+
+.main-game__error {
+  margin: 0 0 0.75rem;
+  color: #a11;
+  font-size: 0.85rem;
+}
+
+.main-game__initial-hint-note {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.75rem;
+  background: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.main-game__dialog-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 200;
+}
+
+.main-game__dialog {
+  max-width: 26rem;
+  padding: 1.25rem;
+  background: #fff;
+  border-radius: 10px;
+  line-height: 1.6;
+}
+
+.main-game__dialog--end {
+  max-width: min(36rem, 100%);
+  max-height: min(90vh, 42rem);
+  overflow-y: auto;
+}
+
+.main-game__dialog-lead {
+  margin: 0 0 1rem;
+}
+
+.main-game__end-answer {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #eab308;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.2);
+}
+
+.main-game__end-answer-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #854d0e;
+  text-align: center;
+}
+
+.main-game__end-answer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.main-game__end-answer-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  background: #fff;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+}
+
+.main-game__end-answer-category {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #92400e;
+  padding: 0.2rem 0.45rem;
+  background: #fef9c3;
+  border-radius: 999px;
+}
+
+.main-game__end-answer-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #713f12;
+}
+
+
+.main-game__dialog h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
+}
+
+.main-game__dialog p {
+  margin: 0 0 1rem;
+}
+
+.main-game__dialog .main-game__btn {
+  width: 100%;
+}
