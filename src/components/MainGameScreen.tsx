@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type {
   Card,
   CardCategory,
   DyingMessage,
   HintCard,
+  RoundResult,
   SecretAnswer,
 } from '../types/game'
 import {
@@ -34,9 +35,9 @@ const CATEGORY_LABEL: Record<CardCategory, string> = {
   motive: '動機',
 }
 
-const CATEGORY_ORDER: CardCategory[] = ['occupation', 'weapon', 'motive']
+export const CATEGORY_ORDER: CardCategory[] = ['occupation', 'weapon', 'motive']
 
-function groupBoardByCategory(boardCards: Card[]) {
+export function groupBoardByCategory(boardCards: Card[]) {
   return {
     occupation: boardCards.filter((c) => c.category === 'occupation'),
     weapon: boardCards.filter((c) => c.category === 'weapon'),
@@ -68,7 +69,7 @@ function MessageStack({ messages }: { messages: DyingMessage[] }) {
   )
 }
 
-function CategoryRow({
+export function CategoryRow({
   category,
   cards,
   messages,
@@ -318,30 +319,40 @@ function VictimHintPanel() {
   )
 }
 
-function HintChip({
+export function HintChip({
   card,
   group,
   name,
   checked,
   onChange,
+  disabled = false,
 }: {
   card: HintCard
   group: 'A' | 'B'
   name: string
   checked: boolean
   onChange: () => void
+  disabled?: boolean
 }) {
   const toneClass =
     group === 'A' ? 'main-game__hint-chip--a' : 'main-game__hint-chip--b'
   return (
-    <label className={`main-game__hint-chip ${toneClass}`}>
-      <input type="radio" name={name} checked={checked} onChange={onChange} />
+    <label
+      className={`main-game__hint-chip ${toneClass}${disabled ? ' main-game__hint-chip--disabled' : ''}`}
+    >
+      <input
+        type="radio"
+        name={name}
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+      />
       {card.name}
     </label>
   )
 }
 
-function DetectiveVictimHandHints({
+export function DetectiveVictimHandHints({
   hintA,
   hintB,
 }: {
@@ -439,6 +450,30 @@ function DetectivePanel() {
   )
 }
 
+export function VictimTurnSkipNoticeDialogView({
+  notice,
+  onDismiss,
+}: {
+  notice: string
+  onDismiss: () => void
+}) {
+  return (
+    <div className="main-game__dialog-overlay" role="dialog" aria-modal="true">
+      <div className="main-game__dialog">
+        <h3>被害者ターンをスキップ</h3>
+        <p>{notice}</p>
+        <button
+          type="button"
+          className="main-game__btn main-game__btn--primary"
+          onClick={onDismiss}
+        >
+          探偵ターンへ
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function VictimTurnSkipNoticeDialog() {
   const { state, dispatch } = useGameState()
 
@@ -447,16 +482,48 @@ function VictimTurnSkipNoticeDialog() {
   }
 
   return (
+    <VictimTurnSkipNoticeDialogView
+      notice={state.victimTurnSkipNotice}
+      onDismiss={() => dispatch({ type: 'DISMISS_VICTIM_TURN_SKIP_NOTICE' })}
+    />
+  )
+}
+
+export function RoundResultDialogView({
+  result,
+  explorationCounter,
+  onContinue,
+  continueDisabled = false,
+  footnote,
+}: {
+  result: RoundResult
+  explorationCounter: number
+  onContinue: () => void
+  continueDisabled?: boolean
+  footnote?: ReactNode
+}) {
+  const title =
+    result.outcome === 'success' ? '真実への接近！' : '捜査の迷走…'
+  const body =
+    result.outcome === 'success'
+      ? '探偵たちの鋭い推理により、6つの容疑（カード）が晴れた。被害者の残した手がかりからさらに絞り込もう。'
+      : explorationCounter >= MAX_EXPLORATION
+      ? `探偵たちの推理は的外れだったようだ。探索カウンタが最大（${MAX_EXPLORATION}）に達した。次の推理失敗でゲームオーバーとなる。`
+      : `探偵たちの推理は的外れだったようだ。探索カウンタが1増えた（現在 ${explorationCounter}/${MAX_EXPLORATION}）。`
+
+  return (
     <div className="main-game__dialog-overlay" role="dialog" aria-modal="true">
       <div className="main-game__dialog">
-        <h3>被害者ターンをスキップ</h3>
-        <p>{state.victimTurnSkipNotice}</p>
+        <h3>{title}</h3>
+        <p>{body}</p>
+        {footnote}
         <button
           type="button"
           className="main-game__btn main-game__btn--primary"
-          onClick={() => dispatch({ type: 'DISMISS_VICTIM_TURN_SKIP_NOTICE' })}
+          onClick={onContinue}
+          disabled={continueDisabled}
         >
-          探偵ターンへ
+          続ける
         </button>
       </div>
     </div>
@@ -471,29 +538,12 @@ function ResultDialog() {
     return null
   }
 
-  const title =
-    result.outcome === 'success' ? '真実への接近！' : '捜査の迷走…'
-  const body =
-    result.outcome === 'success'
-      ? '探偵たちの鋭い推理により、6つの容疑（カード）が晴れた。被害者の残した手がかりからさらに絞り込もう。'
-      : state.explorationCounter >= MAX_EXPLORATION
-      ? `探偵たちの推理は的外れだったようだ。探索カウンタが最大（${MAX_EXPLORATION}）に達した。次の推理失敗でゲームオーバーとなる。`
-      : `探偵たちの推理は的外れだったようだ。探索カウンタが1増えた（現在 ${state.explorationCounter}/${MAX_EXPLORATION}）。`
-
   return (
-    <div className="main-game__dialog-overlay" role="dialog" aria-modal="true">
-      <div className="main-game__dialog">
-        <h3>{title}</h3>
-        <p>{body}</p>
-        <button
-          type="button"
-          className="main-game__btn main-game__btn--primary"
-          onClick={() => dispatch({ type: 'DISMISS_RESULT' })}
-        >
-          続ける
-        </button>
-      </div>
-    </div>
+    <RoundResultDialogView
+      result={result}
+      explorationCounter={state.explorationCounter}
+      onContinue={() => dispatch({ type: 'DISMISS_RESULT' })}
+    />
   )
 }
 
@@ -529,20 +579,37 @@ function EndResultDialog({
   onDismiss: () => void
 }) {
   const { state } = useGameState()
-  const secret = state.secretAnswer
   const isEndPhase = state.phase === 'gameover' || state.phase === 'victory'
 
   if (!isEndPhase || dismissed) {
     return null
   }
 
+  return (
+    <EndResultDialogView
+      outcome={state.phase === 'gameover' ? 'gameover' : 'victory'}
+      secret={state.secretAnswer}
+      onDismiss={onDismiss}
+    />
+  )
+}
+
+export function EndResultDialogView({
+  outcome,
+  secret,
+  onDismiss,
+}: {
+  outcome: 'gameover' | 'victory'
+  secret: SecretAnswer | null
+  onDismiss: () => void
+}) {
   const title =
-    state.phase === 'gameover'
+    outcome === 'gameover'
       ? '迷宮入り — 探偵の敗北'
       : '隠された真実がすべて暴かれた。'
 
   const lead =
-    state.phase === 'gameover'
+    outcome === 'gameover'
       ? '探索カウンタが最大のまま推理に失敗しました。事件は未解決のまま……。'
       : '被害者の残した手がかりから、ついに事件の全貌が判明した！'
 

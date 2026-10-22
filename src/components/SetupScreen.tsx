@@ -12,7 +12,11 @@ function createPlayerId(): string {
   return crypto.randomUUID()
 }
 
-export function SetupScreen() {
+interface SetupScreenProps {
+  onBackToTitle?: () => void
+}
+
+export function SetupScreen({ onBackToTitle }: SetupScreenProps = {}) {
   const { dispatch } = useGameState()
   const [draftPlayers, setDraftPlayers] = useState<DraftPlayer[]>([])
   const [nameInput, setNameInput] = useState('')
@@ -129,6 +133,14 @@ export function SetupScreen() {
           ゲーム開始
         </button>
       </div>
+
+      {onBackToTitle && (
+        <div className="setup-screen__actions">
+          <button type="button" className="setup-screen__btn-secondary" onClick={onBackToTitle}>
+            タイトルへ戻る
+          </button>
+        </div>
+      )}
     </section>
   )
 }

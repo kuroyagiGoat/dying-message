@@ -338,6 +338,11 @@
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
+.main-game__hint-chip--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .main-game__detective-row {
   display: flex;
   flex-wrap: wrap;
