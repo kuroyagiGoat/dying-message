@@ -249,107 +249,7 @@ begin
 end;
 $$;
 
--- 被害者の初回ヒント提出（Phase 2）。3カテゴリに1組ずつ設置し、手札を消費して Phase 3（deduction）へ進める
--- p_hints: [{ "targetCategory": "occupation", "hintCardAId": "...", "hintCardBId": "..." }, ...]（3件）
-create or replace function public.submit_initial_hints(
-  p_room_id uuid,
-  p_player_id uuid,
-  p_token text,
-  p_hints jsonb
-)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_room public.rooms%rowtype;
-  v_state jsonb;
-  v_hand jsonb;
-  v_messages jsonb;
-  v_hint jsonb;
-  v_category text;
-  v_card_a jsonb;
-  v_card_b jsonb;
-  v_used_ids text[] := '{}';
-  v_remaining_hand jsonb;
-begin
-  if not public.is_room_member(p_room_id, p_player_id, p_token) then
-    raise exception 'プレイヤー認証に失敗しました。' using errcode = '42501';
-  end if;
-
-  select * into v_room from public.rooms where id = p_room_id for update;
-  if v_room.status is distinct from 'playing'
-    or v_room.victim_player_id is distinct from p_player_id then
-    raise exception 'ヒントを提出できるのは被害者のみです。' using errcode = '42501';
-  end if;
-
-  v_state := v_room.game_state;
-  if v_state ->> 'phase' is distinct from 'victim_hint'
-    or coalesce((v_state ->> 'initialHintsComplete')::boolean, false) then
-    raise exception '現在は初回ヒントを提出できるフェーズではありません。';
-  end if;
-
-  if jsonb_typeof(p_hints) is distinct from 'array'
-    or jsonb_array_length(p_hints) <> 3
-    or (
-      select count(distinct h ->> 'targetCategory')
-      from jsonb_array_elements(p_hints) h
-      where h ->> 'targetCategory' in ('occupation', 'weapon', 'motive')
-    ) <> 3 then
-    raise exception '職業・凶器・動機の3カテゴリに1組ずつヒントを指定してください。';
-  end if;
-
-  v_hand := coalesce(v_state -> 'victimHintHand', '[]'::jsonb);
-  v_messages := coalesce(
-    v_state -> 'hintMessagesByCategory',
-    '{"occupation": [], "weapon": [], "motive": []}'::jsonb
-  );
-
-  for v_hint in select h from jsonb_array_elements(p_hints) h loop
-    v_category := v_hint ->> 'targetCategory';
-    if jsonb_array_length(coalesce(v_messages -> v_category, '[]'::jsonb)) <> 0 then
-      raise exception 'すでにヒントが設置されているカテゴリがあります。';
-    end if;
-
-    -- カード内容はクライアントの値を信用せず、サーバー上の手札から取り出す
-    select c into v_card_a from jsonb_array_elements(v_hand) c
-      where c ->> 'id' = v_hint ->> 'hintCardAId' and c ->> 'group' = 'A';
-    select c into v_card_b from jsonb_array_elements(v_hand) c
-      where c ->> 'id' = v_hint ->> 'hintCardBId' and c ->> 'group' = 'B';
-    if v_card_a is null or v_card_b is null then
-      raise exception '手札にないヒントカードが指定されています（A群・B群から1枚ずつ選んでください）。';
-    end if;
-    if (v_card_a ->> 'id') = any (v_used_ids) or (v_card_b ->> 'id') = any (v_used_ids) then
-      raise exception '同じヒントカードを複数のカテゴリに使うことはできません。';
-    end if;
-    v_used_ids := v_used_ids || array[v_card_a ->> 'id', v_card_b ->> 'id'];
-
-    v_messages := jsonb_set(
-      v_messages,
-      array[v_category],
-      coalesce(v_messages -> v_category, '[]'::jsonb) || jsonb_build_array(
-        jsonb_build_object('targetCategory', v_category, 'hintCardA', v_card_a, 'hintCardB', v_card_b)
-      )
-    );
-  end loop;
-
-  select coalesce(jsonb_agg(c order by ord), '[]'::jsonb) into v_remaining_hand
-    from jsonb_array_elements(v_hand) with ordinality as t(c, ord)
-    where not ((c ->> 'id') = any (v_used_ids));
-
-  v_state := v_state || jsonb_build_object(
-    'hintMessagesByCategory', v_messages,
-    'victimHintHand', v_remaining_hand,
-    'usedHintCardIds', coalesce(v_state -> 'usedHintCardIds', '[]'::jsonb) || to_jsonb(v_used_ids),
-    'initialHintsComplete', true,
-    'selectedCardsForRemoval', '[]'::jsonb,
-    'phase', 'deduction'
-  );
-
-  update public.rooms set game_state = v_state where id = p_room_id;
-end;
-$$;
+drop function if exists public.submit_initial_hints(uuid, uuid, text, jsonb);
 
 -- ---------------------------------------------------------------------------
 -- Phase 3〜4 / 2ターン目以降
@@ -644,9 +544,13 @@ begin
 end;
 $$;
 
--- 2ターン目以降の被害者ターン：ヒントが2組未満のカテゴリに1組だけ追加し、Phase 3 へ進める
+-- 被害者のヒント提出（Phase 2）。ローカル版 reducer の SUBMIT_HINT と同じ規則で1組ずつ受け付ける
+--   初回ターン：まだヒントの無いカテゴリに1組設置。3カテゴリそろった時点で Phase 3 へ
+--   2ターン目以降：ヒントが2組未満のカテゴリに1組だけ追加し、Phase 3 へ
 -- p_hint: { "targetCategory": "weapon", "hintCardAId": "...", "hintCardBId": "..." }
-create or replace function public.submit_additional_hint(
+drop function if exists public.submit_additional_hint(uuid, uuid, text, jsonb);
+
+create or replace function public.submit_victim_hint(
   p_room_id uuid,
   p_player_id uuid,
   p_token text,
@@ -666,6 +570,8 @@ declare
   v_card_a jsonb;
   v_card_b jsonb;
   v_used_ids text[];
+  v_initial boolean;
+  v_next_phase text;
 begin
   if not public.is_room_member(p_room_id, p_player_id, p_token) then
     raise exception 'プレイヤー認証に失敗しました。' using errcode = '42501';
@@ -678,15 +584,21 @@ begin
   end if;
 
   v_state := v_room.game_state;
-  if v_state ->> 'phase' is distinct from 'victim_hint'
-    or not coalesce((v_state ->> 'initialHintsComplete')::boolean, false) then
-    raise exception '現在は追加ヒントを提出できるフェーズではありません。';
+  if v_state ->> 'phase' is distinct from 'victim_hint' then
+    raise exception '現在はヒントを提出できるフェーズではありません。';
   end if;
   if v_category is null or v_category not in ('occupation', 'weapon', 'motive') then
     raise exception 'ヒントを設置するカテゴリを指定してください。';
   end if;
 
-  v_messages := v_state -> 'hintMessagesByCategory';
+  v_initial := not coalesce((v_state ->> 'initialHintsComplete')::boolean, false);
+  v_messages := coalesce(
+    v_state -> 'hintMessagesByCategory',
+    '{"occupation": [], "weapon": [], "motive": []}'::jsonb
+  );
+  if v_initial and jsonb_array_length(coalesce(v_messages -> v_category, '[]'::jsonb)) >= 1 then
+    raise exception '初回は各カテゴリに1組ずつ。すでに設置済みの行は選べません。';
+  end if;
   if jsonb_array_length(coalesce(v_messages -> v_category, '[]'::jsonb)) >= 2 then
     raise exception 'このカテゴリはすでにヒントが2個提出されています。';
   end if;
@@ -709,6 +621,15 @@ begin
     )
   );
 
+  -- 初回は3カテゴリすべてに1組以上そろうまで被害者ターンを続ける
+  v_next_phase := case
+    when v_initial and exists (
+      select 1 from unnest(array['occupation', 'weapon', 'motive']) cat
+      where jsonb_array_length(coalesce(v_messages -> cat, '[]'::jsonb)) = 0
+    ) then 'victim_hint'
+    else 'deduction'
+  end;
+
   v_state := v_state || jsonb_build_object(
     'hintMessagesByCategory', v_messages,
     'victimHintHand', (
@@ -717,9 +638,10 @@ begin
       where not ((c ->> 'id') = any (v_used_ids))
     ),
     'usedHintCardIds', coalesce(v_state -> 'usedHintCardIds', '[]'::jsonb) || to_jsonb(v_used_ids),
+    'initialHintsComplete', v_next_phase = 'deduction',
     'selectedCardsForRemoval', '[]'::jsonb,
     'victimTurnSkipNotice', null,
-    'phase', 'deduction'
+    'phase', v_next_phase
   );
 
   update public.rooms set game_state = v_state where id = p_room_id;
@@ -729,9 +651,8 @@ $$;
 grant execute on function public.start_online_game(uuid, uuid, text, uuid, jsonb, jsonb) to anon;
 grant execute on function public.get_room_secret(uuid, uuid, text) to anon;
 grant execute on function public.confirm_secret_checked(uuid, uuid, text) to anon;
-grant execute on function public.submit_initial_hints(uuid, uuid, text, jsonb) to anon;
 grant execute on function public.toggle_deduction_card(uuid, uuid, text, text) to anon;
 grant execute on function public.clear_deduction_selection(uuid, uuid, text) to anon;
 grant execute on function public.resolve_deduction(uuid, uuid, text) to anon;
 grant execute on function public.dismiss_round_result(uuid, uuid, text) to anon;
-grant execute on function public.submit_additional_hint(uuid, uuid, text, jsonb) to anon;
+grant execute on function public.submit_victim_hint(uuid, uuid, text, jsonb) to anon;

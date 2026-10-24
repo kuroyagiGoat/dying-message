@@ -151,17 +151,42 @@ function OnlineSecretCheckModal({
   )
 }
 
+/** 被害者の画面にだけ常時表示するお題（正解） */
+function VictimSecretBanner({ secret }: { secret: SecretAnswer | null }) {
+  return (
+    <section className="online-game__secret-banner" aria-label="あなたのお題（正解）">
+      <span className="online-game__secret-banner-title">あなたのお題（探偵には見せないでください）</span>
+      {secret ? (
+        <ul className="online-game__secret-banner-list">
+          {CATEGORY_ORDER.map((category) => (
+            <li key={category}>
+              <span className="secret-check-modal__category">{CATEGORY_LABEL[category]}</span>
+              {secret[category].name}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <span className="online-game__secret-banner-loading">取得中…</span>
+      )}
+    </section>
+  )
+}
+
 export function OnlineGameScreen({ session, room, gameState, players, onLeft }: OnlineGameScreenProps) {
   const [actionError, setActionError] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<string | null>(null)
   const [dismissedSkipNoticeRound, setDismissedSkipNoticeRound] = useState<number | null>(null)
   const [endDialogDismissed, setEndDialogDismissed] = useState(false)
-  const [endSecret, setEndSecret] = useState<SecretAnswer | null>(null)
+  const [secret, setSecret] = useState<SecretAnswer | null>(null)
 
   const isVictim = room.victim_player_id === session.self.id
   const victim = players.find((p) => p.id === room.victim_player_id)
   const phase = gameState.phase
   const isEndPhase = phase === 'gameover' || phase === 'victory'
+  const canViewSecret = (isVictim && phase !== 'secret_check') || isEndPhase
+  const initialHintsPlaced = CATEGORY_ORDER.filter(
+    (cat) => gameState.hintMessagesByCategory[cat].length > 0,
+  ).length
   const selectedIds = gameState.selectedCardsForRemoval ?? []
   const selectedCount = selectedIds.length
   const roundKey = gameState.deductionHistory.length
@@ -172,18 +197,18 @@ export function OnlineGameScreen({ session, room, gameState, players, onLeft }: 
   const hand = useMemo(() => splitVictimHintHand(gameState.victimHintHand), [gameState.victimHintHand])
   const answerIds = useMemo(
     () =>
-      endSecret && isEndPhase
-        ? new Set([endSecret.occupation.id, endSecret.weapon.id, endSecret.motive.id])
+      secret && isEndPhase
+        ? new Set([secret.occupation.id, secret.weapon.id, secret.motive.id])
         : EMPTY_SET,
-    [endSecret, isEndPhase],
+    [secret, isEndPhase],
   )
 
   useEffect(() => {
-    if (!isEndPhase || endSecret) return
+    if (!canViewSecret || secret) return
     fetchRoomSecret(session)
-      .then(setEndSecret)
+      .then(setSecret)
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : 'お題の取得に失敗しました。'))
-  }, [isEndPhase, endSecret, session])
+  }, [canViewSecret, secret, session])
 
   const run = async (key: string, action: () => Promise<void>) => {
     setPendingAction(key)
@@ -231,6 +256,8 @@ export function OnlineGameScreen({ session, room, gameState, players, onLeft }: 
         </button>
       </header>
 
+      {isVictim && phase !== 'secret_check' && <VictimSecretBanner secret={secret} />}
+
       <div className="main-game__board">
         {CATEGORY_ORDER.map((category) => (
           <CategoryRow
@@ -261,8 +288,9 @@ export function OnlineGameScreen({ session, room, gameState, players, onLeft }: 
                 ? '被害者がお題を確認しています。しばらくお待ちください…'
                 : gameState.initialHintsComplete
                   ? '被害者が追加のダイイングメッセージを作成中です…'
-                  : '被害者がダイイングメッセージを作成中です…'}
+                  : `被害者がダイイングメッセージを作成中です…（設置済み ${initialHintsPlaced}/${CATEGORY_ORDER.length} 行）`}
             </p>
+            <DetectiveVictimHandHints hintA={hand.hintA} hintB={hand.hintB} />
             <DeductionHistoryList
               history={gameState.deductionHistory}
               title="過去の推理履歴"
@@ -376,7 +404,7 @@ export function OnlineGameScreen({ session, room, gameState, players, onLeft }: 
       {isEndPhase && !endDialogDismissed && (
         <EndResultDialogView
           outcome={phase}
-          secret={endSecret}
+          secret={secret}
           onDismiss={() => setEndDialogDismissed(true)}
         />
       )}

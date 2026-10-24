@@ -212,8 +212,41 @@
   color: #555;
 }
 
-.online-game__draft-summary {
-  margin-bottom: 1rem;
+.online-game__secret-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  border: 2px solid #e6b84a;
+  border-radius: 8px;
+  background: #fff8e1;
+}
+
+.online-game__secret-banner-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #8a5a00;
+}
+
+.online-game__secret-banner-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-weight: 700;
+}
+
+.online-game__secret-banner-list .secret-check-modal__category {
+  min-width: 0;
+}
+
+.online-game__secret-banner-loading {
+  color: #8a5a00;
+  font-size: 0.85rem;
 }
 
 .online-game__spinner {

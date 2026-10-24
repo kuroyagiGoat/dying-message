@@ -239,24 +239,13 @@ export interface HintSelection {
   hintCardBId: string
 }
 
-/** 被害者専用：3カテゴリ分の初回ヒントを提出し、Phase 3（deduction）へ進める */
-export async function submitInitialHints(
-  session: RoomSession,
-  hints: HintSelection[],
-): Promise<void> {
-  const { error } = await getSupabase().rpc('submit_initial_hints', {
-    ...authParams(session),
-    p_hints: hints,
-  })
-  if (error) throw toRoomError(error, 'ヒントの提出に失敗しました。')
-}
-
-/** 被害者専用：2ターン目以降、ヒントが2組未満のカテゴリに1組だけ追加する */
-export async function submitAdditionalHint(
-  session: RoomSession,
-  hint: HintSelection,
-): Promise<void> {
-  const { error } = await getSupabase().rpc('submit_additional_hint', {
+/**
+ * 被害者専用：ヒントを1組提出する。
+ * 初回ターンは未設置のカテゴリに1組ずつ（3カテゴリそろうと Phase 3 へ）、
+ * 2ターン目以降はヒントが2組未満のカテゴリに1組だけ追加して Phase 3 へ進む。
+ */
+export async function submitVictimHint(session: RoomSession, hint: HintSelection): Promise<void> {
+  const { error } = await getSupabase().rpc('submit_victim_hint', {
     ...authParams(session),
     p_hint: hint,
   })
